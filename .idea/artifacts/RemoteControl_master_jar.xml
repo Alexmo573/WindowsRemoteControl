@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="RemoteControl-master:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/RemoteControl_master_jar</output-path>
+    <root id="archive" name="RemoteControl-master.jar">
+      <element id="module-output" name="RemoteControl-master" />
+    </root>
+  </artifact>
+</component>
