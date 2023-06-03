@@ -145,7 +145,27 @@ public class Server extends JPanel implements Runnable {
 						response.writeObject(fileCarrier);
 						response.flush();
 					}
+				}
 
+				if("upload".equals(carrier.getType())){
+					//接收文件名
+
+					File file = new File(System.getProperty("user.dir") + "\\" + carrier.getFilePath());
+
+					FileOutputStream fileOutputStream = new FileOutputStream(file);
+					//接收文件
+					//DataInputStream dataInputStream = new DataInputStream(fileSocket.getInputStream());
+					DataInputStream dataInputStream = new DataInputStream(client.getInputStream());
+					//输出到本地文件
+					byte[] bytes = new byte[1024 * 8];
+					int len;
+					while ((len = dataInputStream.read(bytes)) > 0) {
+						fileOutputStream.write(bytes, 0, len);
+					}
+					//fileOutputStream.write(fileCarrier.getFile());
+					//关闭流
+					dataInputStream.close();
+					fileOutputStream.close();
 				}
 
 				//发送桌面图像回客户端

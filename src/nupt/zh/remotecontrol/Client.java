@@ -60,49 +60,86 @@ public class Client extends JPanel implements MouseListener, MouseMotionListener
 	}
 
 	//文件下载函数
-	public boolean fileControlCommand(String filePath) {
+	public boolean fileControlCommand(String filePath,String action) {
 		ControlCarrier command=new ControlCarrier();
-		//下载成功标志
+		//成功标志
 		boolean flag=false;
-		command.setFilePath(filePath);
-		command.setType("download");
+		//设置上传还是下载
+		command.setType(action);
 
 		ObjectOutputStream objectOut = null;
 		ObjectInputStream objectInput = null;
 		try {
 			Socket commandSocket = new Socket(InetAddress.getByName(controlIp), controlPort);
 			//Socket fileSocket = new Socket(InetAddress.getByName(controlIp), controlPort+1);
-			//发送命令
-			objectOut = new ObjectOutputStream(new BufferedOutputStream(commandSocket.getOutputStream()));
-			objectOut.writeObject(command);
-			objectOut.flush();
-			Thread.sleep(100);
-			System.out.println("发送命令："+command.getFilePath()+command.getType());
-			//接收被控制端文件
-			objectInput = new ObjectInputStream(new BufferedInputStream(commandSocket.getInputStream()));
-			ControlCarrier fileCarrier = (ControlCarrier) objectInput.readObject();
-			System.out.println("接收的文件名"+fileCarrier.getFilePath());
-			if(fileCarrier.getFilePath()!=null){
-				//创建文件
-				File file = new File(System.getProperty("user.dir")+"\\"+fileCarrier.getFilePath());
-				FileOutputStream fileOutputStream = new FileOutputStream(file);
-				//接收文件
-				//DataInputStream dataInputStream = new DataInputStream(fileSocket.getInputStream());
-				DataInputStream dataInputStream = new DataInputStream(commandSocket.getInputStream());
-				//输出到本地文件
-				byte[] bytes = new byte[1024 * 8];
-				int len;
-				while((len=dataInputStream.read(bytes))>0){
-					fileOutputStream.write(bytes,0,len);
+			if("download".equals(action)){
+				//发送命令
+				objectOut = new ObjectOutputStream(new BufferedOutputStream(commandSocket.getOutputStream()));
+				//设置路径
+				command.setFilePath(filePath);
+				objectOut.writeObject(command);
+				objectOut.flush();
+				//停止一小会，等对方接收
+				Thread.sleep(100);
+				System.out.println("发送命令："+command.getFilePath()+command.getType());
+				//接收被控制端文件
+				objectInput = new ObjectInputStream(new BufferedInputStream(commandSocket.getInputStream()));
+				ControlCarrier fileCarrier = (ControlCarrier) objectInput.readObject();
+				System.out.println("接收的文件名"+fileCarrier.getFilePath());
+				if(fileCarrier.getFilePath()!=null){
+					//创建文件
+					File file = new File(System.getProperty("user.dir")+"\\"+fileCarrier.getFilePath());
+					FileOutputStream fileOutputStream = new FileOutputStream(file);
+					//接收文件
+					//DataInputStream dataInputStream = new DataInputStream(fileSocket.getInputStream());
+					DataInputStream dataInputStream = new DataInputStream(commandSocket.getInputStream());
+					//输出到本地文件
+					byte[] bytes = new byte[1024 * 8];
+					int len;
+					while((len=dataInputStream.read(bytes))>0){
+						fileOutputStream.write(bytes,0,len);
+					}
+					//fileOutputStream.write(fileCarrier.getFile());
+					//关闭流
+					dataInputStream.close();
+					fileOutputStream.close();
+					/*fileSocket.close();*/
+					commandSocket.close();
+					flag=true;
 				}
-				//fileOutputStream.write(fileCarrier.getFile());
-				//关闭流
-				dataInputStream.close();
-				fileOutputStream.close();
-				/*fileSocket.close();*/
-				commandSocket.close();
-				flag=true;
 			}
+			if("upload".equals(action)){
+				File file=new File(filePath);
+				//文件存在
+				if(file.exists()){
+
+					//文件存在，发送命令
+					objectOut = new ObjectOutputStream(new BufferedOutputStream(commandSocket.getOutputStream()));
+					//传输文件名
+					command.setFilePath(file.getName());
+					objectOut.writeObject(command);
+					objectOut.flush();
+					//停止一小会，等对方接收
+					Thread.sleep(100);
+
+					//传输文件
+					DataOutputStream dataOutputStream = new DataOutputStream(commandSocket.getOutputStream());
+					FileInputStream fileInputStream = new FileInputStream(file);
+					byte[] bytes = new byte[1024 * 8];
+					int len;
+					while((len=fileInputStream.read(bytes))>0){
+						dataOutputStream.write(bytes,0,len);
+					}
+					//从后往前逐个关闭流
+					fileInputStream.close();
+					dataOutputStream.close();
+						/*fileSocket.close();
+						serverSocket.close();*/
+					flag=true;
+				}
+
+			}
+
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
